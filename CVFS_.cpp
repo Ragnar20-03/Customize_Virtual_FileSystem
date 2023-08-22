@@ -267,7 +267,6 @@ int CreateFile(char * name , int permission)
     UFDTArr[i].ptrfiletable -> ptrinode -> FileType = REGURAL;
     UFDTArr[i].ptrfiletable-> ptrinode -> ReferenceCount = 1 ;
     UFDTArr[i].ptrfiletable-> ptrinode -> LinkCount = 1 ; 
-
     UFDTArr[i].ptrfiletable->ptrinode -> FileSize = MAXFILESIZE;
     UFDTArr[i].ptrfiletable -> ptrinode->FileActualSize = 0 ; 
     UFDTArr[i].ptrfiletable -> ptrinode -> permission = permission;
@@ -276,6 +275,58 @@ int CreateFile(char * name , int permission)
     return i;  // Returning file Descriptor    
 }
 
+// Remove File i.e. rm
+int rm_file(char * name)
+{
+    int fd = 0 ; 
+
+    fd = GetFdFromName(name);
+    if (fd == -1)
+        return -1;
+    
+    (UFDTArr[fd].ptrfiletable->ptrinode->LinkCount) -- ;
+
+    if (UFDTArr[fd].ptrfiletable->ptrinode->LinkCount == 0)
+    {
+        UFDTArr[fd].ptrfiletable->ptrinode->FileType = 0 ; 
+        // freeall all fielda memory Ahead
+        free(UFDTArr[fd].ptrfiletable); 
+    }
+
+    UFDTArr[fd].ptrfiletable = NULL;
+    (SUPERBLOCKobj.FreeInode)--;
+}
+
+int ReadFile(int fd , char * arr , int isize)
+{
+    int read_size = 0 ;
+
+    if (UFDTArr[fd].ptrfiletable == NULL)  return -1;
+
+    if (UFDTArr[fd].ptrfiletable -> mode != READ && UFDTArr[fd].ptrfiletable->mode != READ + WRITE)   return -2;
+
+    if (UFDTArr[fd].ptrfiletable->ptrinode->permission != READ && UFDTArr[fd].ptrfiletable->ptrinode->permission != READ + WRITE)  return -2;
+
+    if (UFDTArr[fd].ptrfiletable->readoffset == UFDTArr[fd].ptrfiletable -> ptrinode -> FileActualSize)     return -3;
+
+    if (UFDTArr[fd].ptrfiletable->ptrinode->FileType != REGURAL)    return -4;
+
+    read_size = (UFDTArr[fd].ptrfiletable->ptrinode->FileActualSize) - (UFDTArr[fd].ptrfiletable->readoffset);
+    if (read_size < isize)
+    {
+        strncpy(arr,(UFDTArr[fd].ptrfiletable->ptrinode->Buffer) + (UFDTArr[fd].ptrfiletable->readoffset) , read_size);
+
+        UFDTArr[fd].ptrfiletable->readoffset = UFDTArr[fd].ptrfiletable->readoffset+read_size;
+    }
+    else 
+    {
+        strncpy(arr , (UFDTArr[fd].ptrfiletable->ptrinode->Buffer)+(UFDTArr[fd].ptrfiletable->readoffset) , isize);
+
+        (UFDTArr[fd].ptrfiletable->readoffset) = (UFDTArr[fd].ptrfiletable->readoffset) + isize;
+    }
+
+    return isize;
+}
 
 int main(int argc ,  char * argv[])
 {
