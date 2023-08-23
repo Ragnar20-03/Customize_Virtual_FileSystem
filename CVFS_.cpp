@@ -536,6 +536,41 @@ int fstat_file(int fd)
     return 0;
 }
 
+int stat_file(char * name)
+{
+    PINODE temp = head;
+    int i = 0 ; 
+
+    if (name == NULL)   return -1;
+
+    while (temp != NULL)
+    {
+        if (strcmp(name , temp->FileName) == 0 )
+            break;
+        temp = temp -> next;
+    }
+
+    if (temp == NULL)  return -2;
+
+    printf("\n---------------Statical Information about File-------------\n");
+    printf("File Name : %s\n",temp -> FileName);
+    printf("Inode Number : %d\n",temp->InodeNumber);
+    printf("File Size : %d\n",temp -> FileSize);
+    printf("Actual File Size : %d\n",temp->FileActualSize);
+    printf("Link Count : %d\n",temp->LinkCount);
+    printf("Reference Count : %d\n",temp->ReferenceCount);
+
+    if (temp -> permission == 1)
+        printf("File Permission : Read only \n");
+    else if (temp -> permission == 2)
+        printf("File Permission : Write \n");
+    else if (temp -> permission == 3)
+        printf("File Permission : Read & Write\n");
+    printf("--------------------------------------------------------------\n\n");
+
+    return 0;
+}
+
 int main(int argc ,  char * argv[])
 {
     // man(argv[1]);
