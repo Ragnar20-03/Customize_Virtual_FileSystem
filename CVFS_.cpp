@@ -408,10 +408,103 @@ int CloseFileByName(char * name)
         
     UFDTArr[i].ptrfiletable->readoffset = 0 ;
     UFDTArr[i].ptrfiletable->writeoffset = 0 ;
-    (UFDTArr[fd].ptrfiletable->ptrinode->ReferenceCount)--;
+    (UFDTArr[i].ptrfiletable->ptrinode->ReferenceCount)--;
 
     return 0;
 }
+
+void CloseAllFile()
+{
+    int i = 0 ; 
+    while (i<50)
+    {
+        if (UFDTArr[i].ptrfiletable != NULL)
+        {
+            UFDTArr[i].ptrfiletable->readoffset = 0 ;
+            UFDTArr[i].ptrfiletable->writeoffset = 0 ;
+            (UFDTArr[i].ptrfiletable->ptrinode->ReferenceCount)--;
+            // break;
+        }
+        i++;
+    }
+}
+
+int LseekFile(int fd , int size  , int from)
+{
+    if ((fd < 0) || (from > 2))     return -1;
+    if (UFDTArr[fd].ptrfiletable == NULL)   return -1;
+
+    if ((UFDTArr[fd].ptrfiletable->mode == READ) || (UFDTArr[fd].ptrfiletable->mode == READ+WRITE) )
+    {
+        if (from == CURRENT)
+        {
+            if (((UFDTArr[fd].ptrfiletable->readoffset)+ size) > UFDTArr[fd].ptrfiletable->ptrinode->FileActualSize )   return -1;
+            if (((UFDTArr[fd].ptrfiletable->readoffset ) +size ) < 0  ) return -1;
+            (UFDTArr[fd].ptrfiletable->readoffset) = (UFDTArr[fd].ptrfiletable->readoffset)+size;
+        }
+        else if (from == START)
+        {
+            if (size > (UFDTArr[fd].ptrfiletable->ptrinode->FileActualSize))    return -1;
+            if (size < 0)   return -1;
+            (UFDTArr[fd].ptrfiletable->readoffset) = size;
+        }
+        else if (from == END)
+        {
+            if ((UFDTArr[fd].ptrfiletable->ptrinode->FileActualSize) + size > MAXFILESIZE)      return -1;
+            if (((UFDTArr[fd].ptrfiletable->readoffset) + size ) < 0  )     return -1;
+            (UFDTArr[fd].ptrfiletable->readoffset) = (UFDTArr[fd].ptrfiletable->ptrinode->FileActualSize) + size;
+        }
+    }
+    else if (UFDTArr[fd].ptrfiletable->mode == WRITE)
+    {
+        if (from == CURRENT )
+        {
+            if (((UFDTArr[fd].ptrfiletable->writeoffset)+size) > MAXFILESIZE)   return -1;
+            if (((UFDTArr[fd].ptrfiletable->writeoffset) + size ) < 0 ) return -1;
+            if (((UFDTArr[fd].ptrfiletable->writeoffset)+size) > (UFDTArr[fd].ptrfiletable->ptrinode->FileActualSize))
+                (UFDTArr[fd].ptrfiletable->ptrinode->FileActualSize) = (UFDTArr[fd].ptrfiletable->writeoffset ) +size;
+            (UFDTArr[fd].ptrfiletable->writeoffset) = (UFDTArr[fd].ptrfiletable->writeoffset)+size;  
+        }
+        else if (from == START)
+        {
+            if (size > MAXFILESIZE)     return -1;
+            if (size < 0 )  return -1;
+            if (size > (UFDTArr[fd].ptrfiletable->ptrinode->FileActualSize))
+                (UFDTArr[fd].ptrfiletable->ptrinode->FileActualSize) = size;
+            (UFDTArr[fd].ptrfiletable->writeoffset) = size;
+        }
+        else if (from == END)
+        {
+            if ((UFDTArr[fd].ptrfiletable->ptrinode->FileActualSize) + size >MAXFILESIZE)      return -1;
+            if (((UFDTArr[fd].ptrfiletable->writeoffset) + size ) < 0 ) return -1;
+            (UFDTArr[fd].ptrfiletable->writeoffset) = (UFDTArr[fd].ptrfiletable->ptrinode->FileActualSize) + size;
+        }
+    }
+}
+
+void ls_file()
+{
+    int i = 0 ; 
+    PINODE temp = head;
+
+    if (SUPERBLOCKobj.FreeInode == MAXINODE)
+    {
+        printf("Error : There are no files\n");
+        return ;
+    }
+
+    printf("\nFile Name \t Inode number \t File Size \t Link Count\n");
+    printf("--------------------------------------------------------------\n");
+    while (temp != NULL)
+    {
+        if (temp ->FileType != 0 )
+        {
+            printf("%s\t\t%d\t\t%d\t\t%d\n",temp->FileName,temp->InodeNumber,temp->FileActualSize,temp->LinkCount);
+        }
+        temp = temp -> next;
+    }
+    printf("--------------------------------------------------------------\n");
+}   
 
 int main(int argc ,  char * argv[])
 {
