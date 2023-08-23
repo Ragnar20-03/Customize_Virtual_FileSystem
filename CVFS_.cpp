@@ -392,7 +392,26 @@ int OpenFile(char * name , int mode)
         return i;
 }
 
+void CloseFileByName(int fd)
+{
+    UFDTArr[fd].ptrfiletable->readoffset = 0  ;
+    UFDTArr[fd].ptrfiletable->writeoffset = 0  ;
+    (UFDTArr[fd].ptrfiletable->ptrinode->ReferenceCount)--;
+}
 
+int CloseFileByName(char * name)
+{
+    int i = 0 ; 
+    i = GetFdFromName(name);
+    if ( i == -1)
+            return -1;
+        
+    UFDTArr[i].ptrfiletable->readoffset = 0 ;
+    UFDTArr[i].ptrfiletable->writeoffset = 0 ;
+    (UFDTArr[fd].ptrfiletable->ptrinode->ReferenceCount)--;
+
+    return 0;
+}
 
 int main(int argc ,  char * argv[])
 {
